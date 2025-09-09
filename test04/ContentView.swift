@@ -1,10 +1,28 @@
 import SwiftUI
 
+struct Upgrade: Identifiable {
+    let id = UUID()
+    let name: String
+    var cost: Int
+    let type: UpgradeType
+}
+
+enum UpgradeType {
+    case clickPower(Int)
+    case autoPoop(Int)
+}
+
+
 struct ContentView: View {
     @State private var score = 0
     @State private var isPressed = false
     @State private var clickPower = 1
-        @State private var autoPoops = 0
+    @State private var autoPoops = 0
+    
+    @State private var upgrades: [Upgrade] = [
+        Upgrade(name: "🪠 (+5/click)", cost: 50, type: .clickPower(5)),
+        Upgrade(name: "🧻 (+1/sec)", cost: 100, type: .autoPoop(1))
+    ]
     
     var body: some View {
         VStack(spacing: 30) {
@@ -21,11 +39,10 @@ struct ContentView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 200, height: 200)
-           
-                Button(action: {//clickable poop emoji
+                
+                Button(action: {
                     score += clickPower
-                    
-                    // Animate poop emoji
+       
                     withAnimation(.spring(response: 0.2, dampingFraction: 0.4)) {
                         isPressed = true
                     }
@@ -42,40 +59,40 @@ struct ContentView: View {
                 .buttonStyle(.plain)
                 .offset(y: -20) // sits inside bowl
             }
+ 
             VStack {
-                           Button("buy 🪠+5/click, cost 50") {
-                               if score >= 50 {
-                                   score -= 50
-                                   clickPower += 5
-                               }
-                           }
-                           .padding()
-                           .background(score >= 50 ? Color.green : Color.gray)
-                           .foregroundColor(.white)
-                           .cornerRadius(10)
-                           
-                           Button("buy 🧻 +1/sec, cost 100") {
-                               if score >= 100 {
-                                   score -= 100
-                                   autoPoops += 1
-                               }
-                           }
-                           .padding()
-                           .background(score >= 100 ? Color.blue : Color.gray)
-                           .foregroundColor(.white)
-                           .cornerRadius(10)
-                       }
-                   }
-                   .padding()
-                   .onAppear {
-                       // Timer for auto poops
-                       Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                           score += autoPoops
-                       }
-                   }
-               }
-           }
+                ForEach(upgrades.indices, id: \.self) { i in
+                    let upgrade = upgrades[i]
+                    
+                    Button("buy \(upgrade.name), cost \(upgrade.cost)") {
+                        if score >= upgrade.cost {
+                            score -= upgrade.cost
+                            switch upgrade.type {
+                            case .clickPower(let amount):
+                                clickPower += amount
+                            case .autoPoop(let amount):
+                                autoPoops += amount
+                            }
+                            // Increase cost for next purchase (×1.5)
+                            upgrades[i].cost = Int(Double(upgrades[i].cost) * 1.5)
+                        }
+                    }
+                    .padding()
+                    .background(score >= upgrade.cost ? Color.green : Color.gray)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                }
+            }
+        }
+        .padding()
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                score += autoPoops
+            }
+        }
+    }
+}
 
-           #Preview {
-               ContentView()
-           }
+#Preview {
+    ContentView()
+}
